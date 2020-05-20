@@ -259,10 +259,11 @@ post_fname[MAX_PATH] = "";
 DWORD fSize = 0;
 TCHAR *szToStack = NULL;
 
+unsigned long fs = 0UL;
+
 int status;
 DWORD cnt = 0,
 cntToStack = 0,
-fs = 0,
 timeout = 0,
 receivetimeout = 0;
 DWORD startTime, transfStart, openType;
@@ -305,7 +306,9 @@ static TCHAR szSecond[64] = TEXT("second");
 static TCHAR szMinute[32] = TEXT("minute");
 static TCHAR szHour[32] = TEXT("hour");
 static TCHAR szPlural[32] = TEXT("s");
-static TCHAR szProgress[128] = TEXT("%dkB (%d%%) of %dkB @ %d.%01dkB/s");
+//static TCHAR szProgress[256] = TEXT("%s FS: %lu - %lu Mb (%lu%%) of %lu Mb @ %d.%01d Mb/s");
+static TCHAR szProgress[256] = TEXT("%lu MB (%lu%%) of %lu MB @ %d.%01d MB/s");
+static TCHAR szProgressGb[256] = TEXT("%lu MB (%lu%%) of %lu GB @ %d.%01d MB/s");
 static TCHAR szRemaining[64] = TEXT(" (%d %s%s remaining)");
 static TCHAR szBasic[128] = TEXT("");
 static TCHAR szAuth[128] = TEXT("");
@@ -603,7 +606,7 @@ HINTERNET openFtpFile(HINTERNET hConn,
 			{
 				if(_tcsstr(buf, TEXT("213 ")))
 				{
-					fs = myatou(_tcschr(buf, TEXT(' ')) + 1);
+					fs = (unsigned long)(myatouLL(_tcschr(buf, TEXT(' ')) + 1) / 1024);
 				}
 				/* stupid ProFTPD returns error on SIZE request. let's continue without size.
 				But IE knows some trick to get size from ProFTPD......
@@ -872,11 +875,15 @@ resend_auth2:
 					{
 						if(cnt == 0)
 						{
-							if(HttpQueryInfo(hFile, HTTP_QUERY_CONTENT_LENGTH, buf,
+							if (HttpQueryInfo(hFile, HTTP_QUERY_CONTENT_LENGTH, buf,
 								&(rslt = sizeof(buf)), NULL))
-								fs = myatou(buf);
+							{
+								fs = (unsigned long)(myatouLL(buf) / 1024);	// Convert to Kbytes
+							}
 							else
+							{
 								fs = NOT_AVAILABLE;
+							}
 						}
 						else
 						{
@@ -1158,10 +1165,17 @@ COLORREF parseColor(const TCHAR *string)
 
 void progress_callback(void)
 {
+	DWORD fsKb = fs;
+	DWORD fsMb = fs / 1024;
+	DWORD fsGb = (fs / 1024) / 1024;
+	DWORD cntKb = cnt / 1024;
+	DWORD cntMb = cntKb / 1024;
+	DWORD cntGb = cntMb / 1024;
+
 	static TCHAR buf[1024] = TEXT(""), b[1024] = TEXT("");
 	int time_sofar = max(1, (GetTickCount() - transfStart) / 1000);
 	int bps = cnt / time_sofar;
-	int remain = (cnt > 0 && fs != NOT_AVAILABLE) ? (MulDiv(time_sofar, fs, cnt) - time_sofar) : 0;
+	int remain = (cnt > 0 && fs != NOT_AVAILABLE) ? (MulDiv(time_sofar, fsKb, cntKb) - time_sofar) : 0;
 	TCHAR *rtext=szSecond;
 	if(remain < 0) remain = 0;
 	if (remain >= 60)
@@ -1174,22 +1188,28 @@ void progress_callback(void)
 			rtext=szHour;
 		}
 	}
+
+	// szProgress[128] = TEXT("%dkB (%d%%) of %dkB @ %d.%01dkB/s");
 	wsprintf(buf,
 		szProgress,
-		cnt/1024,
-		fs > 0 && fs != NOT_AVAILABLE ? MulDiv(100, cnt, fs) : 0,
-		fs != NOT_AVAILABLE ? fs/1024 : 0,
-		bps/1024,((bps*10)/1024)%10
-		);
+		cntMb,
+		fs > 0 && fs != NOT_AVAILABLE ? MulDiv(100, cntMb, fsMb) : 0,
+		fs != NOT_AVAILABLE ? fsMb : 0,
+		((bps / 1024) / 1024),
+		((((bps * 10) / 1024) / 1024)) % 10
+	);
+
 	if (remain) wsprintf(buf + lstrlen(buf),
 		szRemaining,
 		remain,
 		rtext,
-		remain==1?TEXT(""):szPlural
-		);
+		remain == 1 ? TEXT("") : szPlural
+	);
+
 	SetDlgItemText(hDlg, IDC_STATIC1, (cnt == 0 || status == ST_CONNECTING) ? szConnecting : buf);
 	if(fs > 0 && fs != NOT_AVAILABLE)
-		SendMessage(GetDlgItem(hDlg, IDC_PROGRESS1), PBM_SETPOS, MulDiv(cnt, PB_RANGE, fs), 0);
+		SendMessage(GetDlgItem(hDlg, IDC_PROGRESS1), PBM_SETPOS, MulDiv(cntMb, PB_RANGE, fsMb), 0);
+
 	if (*szCaption == 0)
 		wsprintf(buf, szDownloading, _tcsrchr(fn, TEXT('\\')) ? _tcsrchr(fn, TEXT('\\')) + 1 : fn);
 	else

@@ -204,20 +204,54 @@ INT_PTR NSISCALL nsishelper_str_to_ptr(const TCHAR *s)
   return v;
 }
 
-unsigned int NSISCALL myatou(const TCHAR *s)
+unsigned long NSISCALL myatou(const TCHAR *s)
 {
-  unsigned int v=0;
+  unsigned long v=0;
+  unsigned long base=10;
 
   for (;;)
   {
-    unsigned int c=*s++;
-    if (c >= _T('0') && c <= _T('9')) c-=_T('0');
-    else break;
-    v*=10;
-    v+=c;
+    unsigned long c = *s++;
+	if (c == '\0')
+		break;
+    if (c >= _T('0') && c <= _T('9')) 
+	{
+		c -= _T('0');
+	}
+    else 
+	{
+		break;
+	}
+
+    v = v * base + c;
   }
   return v;
 }
+
+unsigned long long NSISCALL myatouLL(const TCHAR *s)
+{
+	unsigned long long v = 0;
+	unsigned long base = 10;
+
+	for (;;)
+	{
+		unsigned long c = *s++;
+		if (c == '\0')
+			break;
+		if (c >= _T('0') && c <= _T('9'))
+		{
+			c -= _T('0');
+		}
+		else
+		{
+			break;
+		}
+
+		v = v * base + c;
+	}
+	return v;
+}
+
 
 int NSISCALL myatoi_or(const TCHAR *s)
 {

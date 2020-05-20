@@ -66,7 +66,8 @@ INT_PTR NSISCALL popintptr();
 int NSISCALL popint_or(); // with support for or'ing (2|4|8)
 INT_PTR NSISCALL nsishelper_str_to_ptr(const TCHAR *s);
 #define myatoi(s) ( (int) nsishelper_str_to_ptr(s) ) // converts a string to an integer
-unsigned int NSISCALL myatou(const TCHAR *s); // converts a string to an unsigned integer, decimal only
+unsigned long NSISCALL myatou(const TCHAR *s); // converts a string to an unsigned integer, decimal only
+unsigned long long NSISCALL myatouLL(const TCHAR *s); // converts a string to an unsigned integer, decimal only
 int NSISCALL myatoi_or(const TCHAR *s); // with support for or'ing (2|4|8)
 TCHAR* NSISCALL getuservariable(const int varnum);
 void NSISCALL setuservariable(const int varnum, const TCHAR *var);
