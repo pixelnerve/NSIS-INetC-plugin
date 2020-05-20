@@ -306,9 +306,8 @@ static TCHAR szSecond[64] = TEXT("second");
 static TCHAR szMinute[32] = TEXT("minute");
 static TCHAR szHour[32] = TEXT("hour");
 static TCHAR szPlural[32] = TEXT("s");
-//static TCHAR szProgress[256] = TEXT("%s FS: %lu - %lu Mb (%lu%%) of %lu Mb @ %d.%01d Mb/s");
-static TCHAR szProgress[256] = TEXT("%lu MB (%lu%%) of %lu MB @ %d.%01d MB/s");
-static TCHAR szProgressGb[256] = TEXT("%lu MB (%lu%%) of %lu GB @ %d.%01d MB/s");
+static TCHAR szProgress[256] = TEXT("%lu %s (%lu%%) of %lu.%01d %s @ %d.%01d %s/s");
+static TCHAR szProgressCntFraction[256] = TEXT("%lu.%02d %s (%lu%%) of %lu.%01d %s @ %d.%01d %s/s");
 static TCHAR szRemaining[64] = TEXT(" (%d %s%s remaining)");
 static TCHAR szBasic[128] = TEXT("");
 static TCHAR szAuth[128] = TEXT("");
@@ -1189,15 +1188,30 @@ void progress_callback(void)
 		}
 	}
 
-	// szProgress[128] = TEXT("%dkB (%d%%) of %dkB @ %d.%01dkB/s");
-	wsprintf(buf,
-		szProgress,
-		cntMb,
-		fs > 0 && fs != NOT_AVAILABLE ? MulDiv(100, cntMb, fsMb) : 0,
-		fs != NOT_AVAILABLE ? fsMb : 0,
-		((bps / 1024) / 1024),
-		((((bps * 10) / 1024) / 1024)) % 10
-	);
+	//unsigned long long cntFraction = ((unsigned long long)(cnt * 100) / 1024 / 1024) % 100;
+	//unsigned long long cntFraction = ( ((((unsigned long long)(cnt * 10)) / 1024) / 1024) / 1024) % 10;
+	DWORD cntFraction = ((cntMb * 100) / 1024) % 100;
+	DWORD fsFraction = ((fsMb * 10) / 1024) % 10;
+	DWORD bpsFraction = ((((bps * 10) / 1024) / 1024)) % 10;
+
+	if (cntMb > 1024)
+	{
+		wsprintf(buf, szProgressCntFraction,
+			cntMb > 1024 ? cntGb : cntMb, cntFraction, cntMb > 1024 ? L"GB" : L"MB",
+			fs > 0 && fs != NOT_AVAILABLE ? MulDiv(100, cntMb, fsMb) : 0, // Percentage
+			fs != NOT_AVAILABLE ? (fsMb > 1024 ? fsGb : fsMb) : 0, fsFraction, fsMb > 1024 ? L"GB" : L"MB",
+			((bps / 1024) / 1024), bpsFraction, L"MB"
+		);
+	}
+	else
+	{
+		wsprintf(buf, szProgress,
+			cntMb > 1024 ? cntGb : cntMb, cntMb > 1024 ? L"GB" : L"MB",
+			fs > 0 && fs != NOT_AVAILABLE ? MulDiv(100, cntMb, fsMb) : 0, // Percentage
+			fs != NOT_AVAILABLE ? (fsMb > 1024 ? fsGb : fsMb) : 0, fsFraction, fsMb > 1024 ? L"GB" : L"MB",
+			((bps / 1024) / 1024), bpsFraction, L"MB"
+		);
+	}
 
 	if (remain) wsprintf(buf + lstrlen(buf),
 		szRemaining,
