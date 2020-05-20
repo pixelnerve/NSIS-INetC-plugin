@@ -7,3 +7,4 @@
 *.lib
 *.aps
 /Plugins
+/Contrib/Inetc/.vs
