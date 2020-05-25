@@ -259,12 +259,12 @@ post_fname[MAX_PATH] = "";
 DWORD fSize = 0;
 TCHAR *szToStack = NULL;
 
-unsigned long fs = 0UL;
+unsigned long long fs = 0UL;
 
 int status;
-DWORD cnt = 0,
-cntToStack = 0,
-timeout = 0,
+unsigned long long cnt = 0,
+cntToStack = 0;
+DWORD timeout = 0,
 receivetimeout = 0;
 DWORD startTime, transfStart, openType;
 bool silent, popup, modernPopup, resume, nocancel, noproxy, nocookies, convToStack, g_ignorecertissues, nossl;
@@ -915,7 +915,8 @@ DWORD __stdcall inetTransfer(void *hw)
 	HINTERNET hSes, hConn, hFile;
 	HANDLE localFile = NULL;
 	HWND hDlg = (HWND)hw;
-	DWORD lastCnt, rslt, err;
+	DWORD lastCnt;
+	DWORD rslt, err;
 	static TCHAR hdr[2048];
 	TCHAR *host = (TCHAR*)LocalAlloc(LPTR, g_stringsize * sizeof(TCHAR)),
 		*path = (TCHAR*)LocalAlloc(LPTR, INTERNET_MAX_URL_LENGTH * sizeof(TCHAR)),
@@ -1125,6 +1126,19 @@ void fsFormat(DWORD bfs, TCHAR *b)
 	else wsprintf(b, TEXT("%u MB"), (bfs / 1024 / 1024));
 }
 
+void fsFormatull(unsigned long long bfs, TCHAR *b)
+{
+	if (bfs == NOT_AVAILABLE)
+		lstrcpy(b, TEXT("???"));
+	else if (bfs == 0)
+		lstrcpy(b, TEXT("0"));
+	else if (bfs < 10 * 1024)
+		wsprintf(b, TEXT("%ull bytes"), bfs);
+	else if (bfs < 10 * 1024 * 1024)
+		wsprintf(b, TEXT("%ull kB"), bfs / 1024);
+	else wsprintf(b, TEXT("%ull MB"), (bfs / 1024 / 1024));
+}
+
 /*****************************************************
 * FUNCTION NAME: parseColor()
 * PURPOSE: 
@@ -1262,11 +1276,11 @@ void onTimer(HWND hDlg)
 	// bytes done and rate
 	if(cnt > 0)
 	{
-		fsFormat(cnt, b);
+		fsFormatull(cnt, b);
 		if(ct > 1 && status == ST_DOWNLOAD)
 		{
 			lstrcat(b, TEXT("   ( "));
-			fsFormat(cnt / ct, b + lstrlen(b));
+			fsFormatull(cnt / ct, b + lstrlen(b));
 			lstrcat(b, TEXT("/sec )"));
 		}
 	}
@@ -1278,7 +1292,7 @@ void onTimer(HWND hDlg)
 	// file size, time remaining, progress bar
 	if(fs > 0 && fs != NOT_AVAILABLE)
 	{
-		fsFormat(fs, b);
+		fsFormatull(fs, b);
 		SetDlgItemText(hDlg, IDC_STATIC5, b);
 		SendDlgItemMessage(hDlg, IDC_PROGRESS1, PBM_SETPOS, MulDiv(cnt, PB_RANGE, fs), 0);
 		if(cnt > 5000)
@@ -1301,7 +1315,7 @@ void onTimer(HWND hDlg)
 void onTimerModern(HWND hDlg)
 {
 	TCHAR b[138];
-	DWORD ct = (GetTickCount() - transfStart) / 1000;
+	unsigned long long ct = (GetTickCount() - transfStart) / 1000;
 	DWORD tt = (GetTickCount() - startTime) / 1000;
 
 	// Dialog window caption
@@ -1317,9 +1331,9 @@ void onTimerModern(HWND hDlg)
 	SetDlgItemText(hDlg, IDC_MODERN_FILE_TEXT, fn);
 
 	// Downloaded / Size
-	fsFormat(cnt, b);
+	fsFormatull(cnt, b);
 	lstrcat(b, TEXT(" / "));
-	fsFormat(fs, b + lstrlen(b));
+	fsFormatull(fs, b + lstrlen(b));
 	SetDlgItemText(hDlg, IDC_MODERN_DOWNLOADED_TEXT, b);
 
 	if(cnt > 0)
@@ -1340,7 +1354,7 @@ void onTimerModern(HWND hDlg)
 		// Download speed
 		if(ct > 0 && status == ST_DOWNLOAD)
 		{
-			fsFormat(cnt / ct, b);
+			fsFormatull(cnt / ct, b);
 			lstrcat(b, TEXT("/s"));
 		}
 		else *b = 0;
