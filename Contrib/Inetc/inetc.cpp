@@ -1238,10 +1238,10 @@ void progress_callback(void)
 	if(fs > 0 && fs != NOT_AVAILABLE)
 		SendMessage(GetDlgItem(hDlg, IDC_PROGRESS1), PBM_SETPOS, MulDiv(cntMb, PB_RANGE, fsMb), 0);
 
-	if (*szCaption == 0)
+	//if (*szCaption == 0)
 		wsprintf(buf, szDownloading, _tcsrchr(fn, TEXT('\\')) ? _tcsrchr(fn, TEXT('\\')) + 1 : fn);
-	else
-		wsprintf(buf, TEXT("%s"),szCaption);
+	//else
+		//wsprintf(buf, TEXT("%s"),szCaption);
 	HWND hwndS = GetDlgItem(childwnd, 1006);
 	if(!silent && hwndS != NULL && IsWindow(hwndS))
 	{
@@ -1320,7 +1320,6 @@ void onTimerModern(HWND hDlg)
 
 	// Dialog window caption
 	lstrcpy(b, *szCaption ? szCaption : PLUGIN_NAME);
-	//wsprintf(b, TEXT("%s - %s"), *szCaption ? szCaption : PLUGIN_NAME, szStatus[status]);
 	if(fs > 0 && fs != NOT_AVAILABLE && status == ST_DOWNLOAD)
 	{
 		wsprintf(b + lstrlen(b), TEXT(" - %d%%"), MulDiv(100, cnt, fs));
@@ -1808,7 +1807,6 @@ void __declspec(dllexport) __cdecl get(HWND hwndParent,
 		}
 	}
 	pushstring(url);
-//	if(*szCaption == 0) lstrcpy(szCaption, PLUGIN_NAME);
 	if(*szUserAgent == 0) lstrcpy(szUserAgent, INETC_USERAGENT);
 	if(*szPassword && *szUsername)
 	{
